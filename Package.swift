@@ -20,9 +20,5 @@ let package = Package(
                 .product(name: "Cordova", package: "capacitor-swift-pm")
             ],
             path: "ios/Sources/AudioRecorderPlugin"),
-        .testTarget(
-            name: "AudioRecorderPluginTests",
-            dependencies: ["AudioRecorderPlugin"],
-            path: "ios/Tests/AudioRecorderPluginTests")
     ]
 )
