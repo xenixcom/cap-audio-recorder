@@ -1,10 +1,16 @@
 package com.xenix.plugins.audiorecorder
 
+import android.Manifest
 import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.media.audiofx.AcousticEchoCanceler
+import android.media.audiofx.AutomaticGainControl
+import android.media.audiofx.NoiseSuppressor
 import android.net.Uri
+import android.os.Build
+import androidx.annotation.RequiresPermission
 import com.getcapacitor.JSObject
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -39,6 +45,7 @@ class AudioRecorder(
     private var returnBase64 = false
     private var maxDuration: Long? = null
 
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     fun start(options: JSObject?, callback: (String?) -> Unit) {
         if (state == RecorderState.RECORDING || state == RecorderState.PAUSED) {
             callback("already recording")
@@ -62,8 +69,14 @@ class AudioRecorder(
             return
         }
 
+       val audioSource = if (Build.VERSION.SDK_INT >= 31) {
+           MediaRecorder.AudioSource.UNPROCESSED
+       } else {
+           MediaRecorder.AudioSource.MIC
+       }
+
         audioRecord = AudioRecord.Builder()
-            .setAudioSource(MediaRecorder.AudioSource.MIC)
+            .setAudioSource(audioSource)
             .setAudioFormat(
                 AudioFormat.Builder()
                     .setEncoding(audioFormat)
@@ -73,6 +86,12 @@ class AudioRecorder(
             )
             .setBufferSizeInBytes(minBuffer * 2)
             .build()
+
+       audioRecord?.audioSessionId?.let { sessionId ->
+           if (AutomaticGainControl.isAvailable()) AutomaticGainControl.create(sessionId)?.enabled = false
+           if (NoiseSuppressor.isAvailable()) NoiseSuppressor.create(sessionId)?.enabled = false
+           if (AcousticEchoCanceler.isAvailable()) AcousticEchoCanceler.create(sessionId)?.enabled = false
+       }
 
         bufferStream.reset()
         recordingFlag.set(true)

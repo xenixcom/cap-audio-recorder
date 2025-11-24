@@ -213,7 +213,7 @@ class AudioRecorder: NSObject {
     // MARK: - Private
 
     private func configureSession(sampleRate: Double?) throws {
-        try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .mixWithOthers])
+        try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .mixWithOthers])
         try session.setActive(true)
         if let sampleRate {
             try session.setPreferredSampleRate(sampleRate)

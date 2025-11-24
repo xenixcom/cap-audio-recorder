@@ -160,8 +160,12 @@ export class AudioRecorder {
     const channelCount = options?.channelCount ?? 1;
     const constraints: MediaStreamConstraints = {
       audio: {
-        channelCount,
         sampleRate: options?.sampleRate,
+        sampleSize: options?.sampleSize,
+        channelCount: options?.channelCount,
+        autoGainControl: false,
+        echoCancellation: false,
+        noiseSuppression: false, 
       },
     };
 
