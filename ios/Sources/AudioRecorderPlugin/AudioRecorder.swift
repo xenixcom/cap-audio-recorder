@@ -61,6 +61,8 @@ class AudioRecorder: NSObject {
     private var inputGain: Float = 1
     private let gainQueue = DispatchQueue(label: "com.xenix.audiorecorder.gain", qos: .userInitiated)
 
+    private var options2 = RecorderOptions2.defaults
+
     var onStateChanged: ((RecorderState) -> Void)?
     var onAudioUrlReady: (([String: Any]) -> Void)?
     var onDurationChanged: ((Double) -> Void)?
@@ -346,5 +348,17 @@ class AudioRecorder: NSObject {
         pauseDate = nil
         accumulatedPause = 0
         try? session.setActive(false, options: [.notifyOthersOnDeactivation])
+    }
+
+    @objc public func getOptions() -> [String: Any] {
+        return options2.toDictionary()
+    }
+
+    @objc public func setOptions(_options: [String: Any]) {
+        options2 = options2.merged(with: _options)
+    }
+
+    @objc public func resetOptions() {
+        options2 = RecorderOptions2.defaults
     }
 }

@@ -31,14 +31,8 @@
                 <p>Input Gain</p>
                 <h2>{{ gainValue.toFixed(2) }}</h2>
               </ion-label>
-              <ion-range
-                aria-label="Input gain"
-                :min="0"
-                :max="3"
-                :step="0.05"
-                :value="gainValue"
-                @ionInput="onGainInput"
-              />
+              <ion-range aria-label="Input gain" :min="0" :max="3" :step="0.05" :value="gainValue"
+                @ionInput="onGainInput" />
             </ion-item>
 
             <ion-item lines="none">
@@ -55,8 +49,16 @@
             <div class="controls">
               <ion-button color="primary" :disabled="!canStart" @click="startRecording">Start</ion-button>
               <ion-button color="medium" :disabled="!canPause" @click="pauseRecording">Pause</ion-button>
-              <ion-button color="primary" fill="outline" :disabled="!canResume" @click="resumeRecording">Resume</ion-button>
+              <ion-button color="primary" fill="outline" :disabled="!canResume"
+                @click="resumeRecording">Resume</ion-button>
               <ion-button color="danger" :disabled="!canStop" @click="stopRecording">Stop</ion-button>
+            </div>
+
+            <div class="controls">
+              <ion-button color="primary" @click="getOptions">Get Options</ion-button>
+              <ion-button color="primary" @click="setOptions(0)">Set Options #0</ion-button>
+              <ion-button color="primary" @click="setOptions(1)">Set Options #1</ion-button>
+              <ion-button color="primary" @click="setOptions(2)">Set Options #2</ion-button>
             </div>
 
             <div v-if="audioUrl" class="playback">
@@ -74,25 +76,25 @@
 </template>
 
 <script setup lang="ts">
-import { 
-  IonContent, 
-  IonHeader, 
-  IonPage, 
-  IonTitle, 
-  IonToolbar, 
-  IonButton, 
-  IonCard, 
-  IonCardHeader, 
-  IonCardTitle, 
-  IonCardSubtitle, 
-  IonCardContent, 
-  IonItem, 
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+  IonButton,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardSubtitle,
+  IonCardContent,
+  IonItem,
   IonLabel,
-  IonRange 
+  IonRange
 } from '@ionic/vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { PluginListenerHandle } from '@capacitor/core';
-import { AudioRecorder } from '@xenix/cap-audio-recorder';
+import { AudioRecorder, RecorderOptions } from '@xenix/cap-audio-recorder';
 import type { PermissionState, RecorderState } from '@xenix/cap-audio-recorder';
 
 const recorderState = ref<RecorderState>('inactive');
@@ -157,7 +159,7 @@ const onGainInput = async (ev: CustomEvent) => {
   const value = Number((ev.detail as any)?.value ?? 1);
   gainValue.value = Number.isFinite(value) ? value : 1;
   try {
-    await AudioRecorder.setInputGain({ value: gainValue.value });
+    await AudioRecorder.setInputGain({ gain: gainValue.value });
   } catch (err) {
     message.value = `Set gain failed: ${String(err)}`;
   }
@@ -178,7 +180,7 @@ const startRecording = async () => {
     return;
   }
   try {
-    await AudioRecorder.start({ returnBase64: false, inputGain: gainValue.value });
+    await AudioRecorder.start({ auto: false, options: {sampleRate: 48000, sampleSize: 16 } });
   } catch (err) {
     message.value = `Start failed: ${String(err)}`;
   }
@@ -242,6 +244,52 @@ onMounted(async () => {
     audioUrl.value = event.uri || null;
   });
 });
+
+const getOptions = async () => {
+  try {
+    const res = await AudioRecorder.getOptions();
+    console.log(JSON.stringify(res.options, null, 2));
+  } catch (err) {
+    message.value = `get options failed: ${String(err)}`;
+  }
+};
+
+const setOptions = async (idx: number) => {
+  console.log(`set options #${idx}`)
+  try {
+    let value: RecorderOptions = {}
+    switch (idx) {
+      case 1:
+        value = {
+          sampleRate: 48000,
+          sampleSize: 32,
+        }
+        break;
+      case 2:
+        value = {
+          calibration: {
+            enabled: false,
+          },
+          detection: {
+            startThreshold: 1,
+            startDuration: 2,
+            stopThreshold: 3,
+            stopDuration: 4,
+            maxSilenceDuration: 5,
+          }
+        }
+        break;
+    }
+    if (idx == 0) {
+      await AudioRecorder.resetOptions();
+    } else {
+      await AudioRecorder.setOptions({ options: value });
+    }
+    getOptions();
+  } catch (err) {
+    message.value = `set options failed: ${String(err)}`;
+  }
+};
 
 onUnmounted(async () => {
   await Promise.all([

@@ -13,15 +13,18 @@ npx cap sync
 
 <docgen-index>
 
+* [`checkPermissions()`](#checkpermissions)
+* [`requestPermissions()`](#requestpermissions)
 * [`start(...)`](#start)
 * [`stop()`](#stop)
 * [`pause()`](#pause)
 * [`resume()`](#resume)
-* [`setInputGain(...)`](#setinputgain)
-* [`getCurrentState()`](#getcurrentstate)
 * [`getCapabilities()`](#getcapabilities)
-* [`checkPermissions()`](#checkpermissions)
-* [`requestPermissions()`](#requestpermissions)
+* [`getCurrentState()`](#getcurrentstate)
+* [`setInputGain(...)`](#setinputgain)
+* [`getOptions()`](#getoptions)
+* [`setOptions(...)`](#setoptions)
+* [`resetOptions()`](#resetoptions)
 * [`addListener('stateChanged', ...)`](#addlistenerstatechanged-)
 * [`addListener('audioUriReady', ...)`](#addlisteneraudiouriready-)
 * [`addListener('durationChanged', ...)`](#addlistenerdurationchanged-)
@@ -34,6 +37,28 @@ npx cap sync
 
 <docgen-api>
 <!--Update the source file JSDoc comments and rerun docgen to update the docs below-->
+
+### checkPermissions()
+
+```typescript
+checkPermissions() => Promise<PermissionStatus>
+```
+
+**Returns:** <code>Promise&lt;<a href="#permissionstatus">PermissionStatus</a>&gt;</code>
+
+--------------------
+
+
+### requestPermissions()
+
+```typescript
+requestPermissions() => Promise<PermissionStatus>
+```
+
+**Returns:** <code>Promise&lt;<a href="#permissionstatus">PermissionStatus</a>&gt;</code>
+
+--------------------
+
 
 ### start(...)
 
@@ -77,15 +102,13 @@ resume() => Promise<void>
 --------------------
 
 
-### setInputGain(...)
+### getCapabilities()
 
 ```typescript
-setInputGain(options: { value: number; }) => Promise<void>
+getCapabilities() => Promise<RecorderCapabilities>
 ```
 
-| Param         | Type                            |
-| ------------- | ------------------------------- |
-| **`options`** | <code>{ value: number; }</code> |
+**Returns:** <code>Promise&lt;<a href="#recordercapabilities">RecorderCapabilities</a>&gt;</code>
 
 --------------------
 
@@ -101,35 +124,48 @@ getCurrentState() => Promise<{ state: RecorderState; }>
 --------------------
 
 
-### getCapabilities()
+### setInputGain(...)
 
 ```typescript
-getCapabilities() => Promise<RecorderCapabilities>
+setInputGain(value: { gain: number; }) => Promise<void>
 ```
 
-**Returns:** <code>Promise&lt;<a href="#recordercapabilities">RecorderCapabilities</a>&gt;</code>
+| Param       | Type                           |
+| ----------- | ------------------------------ |
+| **`value`** | <code>{ gain: number; }</code> |
 
 --------------------
 
 
-### checkPermissions()
+### getOptions()
 
 ```typescript
-checkPermissions() => Promise<PermissionStatus>
+getOptions() => Promise<{ options: RecorderOptions; }>
 ```
 
-**Returns:** <code>Promise&lt;<a href="#permissionstatus">PermissionStatus</a>&gt;</code>
+**Returns:** <code>Promise&lt;{ options: <a href="#recorderoptions">RecorderOptions</a>; }&gt;</code>
 
 --------------------
 
 
-### requestPermissions()
+### setOptions(...)
 
 ```typescript
-requestPermissions() => Promise<PermissionStatus>
+setOptions(value: { options: RecorderOptions; }) => Promise<void>
 ```
 
-**Returns:** <code>Promise&lt;<a href="#permissionstatus">PermissionStatus</a>&gt;</code>
+| Param       | Type                                                                      |
+| ----------- | ------------------------------------------------------------------------- |
+| **`value`** | <code>{ options: <a href="#recorderoptions">RecorderOptions</a>; }</code> |
+
+--------------------
+
+
+### resetOptions()
+
+```typescript
+resetOptions() => Promise<void>
+```
 
 --------------------
 
@@ -208,43 +244,6 @@ removeAllListeners() => Promise<void>
 
 
 ### Interfaces
-
-
-#### RecorderOptions
-
-| Prop               | Type                 |
-| ------------------ | -------------------- |
-| **`sampleRate`**   | <code>number</code>  |
-| **`sampleSize`**   | <code>number</code>  |
-| **`channelCount`** | <code>number</code>  |
-| **`maxDuration`**  | <code>number</code>  |
-| **`returnBase64`** | <code>boolean</code> |
-| **`mimeType`**     | <code>string</code>  |
-| **`inputGain`**    | <code>number</code>  |
-| **`useWorklet`**   | <code>boolean</code> |
-| **`workletUrl`**   | <code>string</code>  |
-
-
-#### RecorderResult
-
-| Prop           | Type                |
-| -------------- | ------------------- |
-| **`blob`**     | <code>string</code> |
-| **`duration`** | <code>number</code> |
-| **`mime`**     | <code>string</code> |
-| **`uri`**      | <code>string</code> |
-
-
-#### RecorderCapabilities
-
-| Prop                    | Type                  |
-| ----------------------- | --------------------- |
-| **`supported`**         | <code>boolean</code>  |
-| **`mimeTypes`**         | <code>string[]</code> |
-| **`preferredMimeType`** | <code>string</code>   |
-| **`sampleRates`**       | <code>number[]</code> |
-| **`sampleSizes`**       | <code>number[]</code> |
-| **`channelCounts`**     | <code>number[]</code> |
 
 
 #### PermissionStatus
@@ -338,6 +337,48 @@ An event which takes place in the DOM.
 | **`capture`** | <code>boolean</code> |
 
 
+#### RecorderOptions
+
+| Prop                   | Type                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`sampleRate`**       | <code>number</code>                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`sampleSize`**       | <code>number</code>                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`channelCount`**     | <code>number</code>                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`autoGainControl`**  | <code>boolean</code>                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **`echoCancellation`** | <code>boolean</code>                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **`noiseSuppression`** | <code>boolean</code>                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **`returnBase64`**     | <code>boolean</code>                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **`mimeType`**         | <code>string</code>                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`maxDuration`**      | <code>number</code>                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`gain`**             | <code>number</code>                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`workletUrl`**       | <code>string</code>                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **`calibration`**      | <code>{ enabled?: boolean; duration?: number; }</code>                                                                                                                                                                                                                                                                                                                                                                                            |
+| **`detection`**        | <code>{ startThreshold?: number; startDuration?: number; stopThreshold?: number; stopDuration?: number; maxSilenceDuration?: number; }</code>                                                                                                                                                                                                                                                                                                     |
+| **`dsp`**              | <code>{ gain?: { enabled?: boolean; gain?: number; }; lowPassFilter?: { enabled?: boolean; frequency?: number; }; highPassFilter?: { enabled?: boolean; frequency?: number; }; compressor?: { enabled?: boolean; threshold?: number; knee?: number; ratio?: number; attack?: number; release?: number; }; limiter?: { enabled?: boolean; threshold?: number; release?: number; }; pseudoStereo?: { enabled?: boolean; delay?: number; }; }</code> |
+
+
+#### RecorderResult
+
+| Prop           | Type                |
+| -------------- | ------------------- |
+| **`blob`**     | <code>string</code> |
+| **`duration`** | <code>number</code> |
+| **`mime`**     | <code>string</code> |
+| **`uri`**      | <code>string</code> |
+
+
+#### RecorderCapabilities
+
+| Prop                    | Type                  |
+| ----------------------- | --------------------- |
+| **`supported`**         | <code>boolean</code>  |
+| **`mimeTypes`**         | <code>string[]</code> |
+| **`preferredMimeType`** | <code>string</code>   |
+| **`sampleRates`**       | <code>number[]</code> |
+| **`sampleSizes`**       | <code>number[]</code> |
+| **`channelCounts`**     | <code>number[]</code> |
+
+
 #### PluginListenerHandle
 
 | Prop         | Type                                      |
@@ -365,11 +406,6 @@ An event which takes place in the DOM.
 ### Type Aliases
 
 
-#### RecorderState
-
-<code>'inactive' | 'recording' | 'paused' | 'initializing' | 'error' | 'stopping'</code>
-
-
 #### EventListenerOrEventListenerObject
 
 <code><a href="#eventlistener">EventListener</a> | <a href="#eventlistenerobject">EventListenerObject</a></code>
@@ -378,5 +414,10 @@ An event which takes place in the DOM.
 #### PermissionState
 
 <code>"denied" | "granted" | "prompt"</code>
+
+
+#### RecorderState
+
+<code>'inactive' | 'recording' | 'paused' | 'initializing' | 'error' | 'stopping'</code>
 
 </docgen-api>

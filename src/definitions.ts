@@ -1,64 +1,30 @@
 import { PluginListenerHandle } from "@capacitor/core";
+import { RecorderState, PermissionStatus } from "./AudioRecorder/RecorderStates";
+import { RecorderOptions } from "./AudioRecorder/RecorderOptions";
+import { RecorderResult, RecorderCapabilities } from "./AudioRecorder/RecorderResult";
+import { StateChangedEvent, AudioUrlReadyEvent, DurationChangedEvent, RecorderErrorEvent } from "./AudioRecorder/RecorderEvents";
 
-export type RecorderState = 'inactive' | 'recording' | 'paused' | 'initializing' | 'error' | 'stopping';
-
-export type PermissionState = 'granted' | 'denied' | 'prompt';
-
-export interface PermissionStatus {
-  state: PermissionState;
-}
-
-export interface RecorderOptions {
-  sampleRate?: number;
-  sampleSize?: number;
-  channelCount?: number;
-  maxDuration?: number;
-  returnBase64?: boolean;
-  mimeType?: string;
-  inputGain?: number;
-  useWorklet?: boolean;
-  workletUrl?: string;
-}
-
-export interface RecorderResult {
-  blob?: string; // base64
-  duration?: number; // milliseconds
-  mime?: string;
-  uri?: string;
-}
-
-export interface RecorderCapabilities {
-  supported?: boolean;
-  mimeTypes?: string[];
-  preferredMimeType?: string;
-  sampleRates?: number[];
-  sampleSizes?: number[];
-  channelCounts?: number[];
-}
-
-export interface StateChangedEvent {
-  state: RecorderState;
-}
-
-export interface AudioUrlReadyEvent extends RecorderResult {}
-
-export interface DurationChangedEvent {
-  duration: number;
-}
+export * from './AudioRecorder/RecorderStates';
+export * from './AudioRecorder/RecorderOptions';
+export * from './AudioRecorder/RecorderResult';
+export * from './AudioRecorder/RecorderEvents';
 
 export interface AudioRecorderPlugin {
-  
-  start(options?: RecorderOptions): Promise<void>;
-  stop(): Promise<RecorderResult>;
-  pause(): Promise<void>;
-  resume(): Promise<void>;
-  setInputGain(options: { value: number }): Promise<void>;
-
-  getCurrentState(): Promise<{ state: RecorderState }>;
-  getCapabilities(): Promise<RecorderCapabilities>;
 
   checkPermissions(): Promise<PermissionStatus>;
   requestPermissions(): Promise<PermissionStatus>;
+  
+  start(value: { auto?: boolean; options?: RecorderOptions }): Promise<void>;
+  stop(): Promise<RecorderResult>;
+  pause(): Promise<void>;
+  resume(): Promise<void>;
+
+  getCapabilities(): Promise<RecorderCapabilities>;
+  getCurrentState(): Promise<{ state: RecorderState }>;
+  setInputGain(value: { gain: number }): Promise<void>;
+  getOptions(): Promise<{ options: RecorderOptions }>;
+  setOptions(value: { options: RecorderOptions }): Promise<void>;
+  resetOptions(): Promise<void>;
 
   addListener(
     eventName: 'stateChanged', 
@@ -73,6 +39,11 @@ export interface AudioRecorderPlugin {
   addListener(
     eventName: 'durationChanged', 
     listenerFunc: (event: DurationChangedEvent) => void
+  ): Promise<PluginListenerHandle>;
+
+  addListener(
+    eventName: 'error',
+    listenerFunc: (event: RecorderErrorEvent) => void
   ): Promise<PluginListenerHandle>;
 
   addListener( // generic fallback

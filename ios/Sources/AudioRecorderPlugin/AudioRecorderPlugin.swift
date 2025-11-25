@@ -1,6 +1,6 @@
-import Foundation
-import Capacitor
 import AVFoundation
+import Capacitor
+import Foundation
 
 @objc(AudioRecorderPlugin)
 public class AudioRecorderPlugin: CAPPlugin, CAPBridgedPlugin {
@@ -15,7 +15,10 @@ public class AudioRecorderPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getCapabilities", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "checkPermissions", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requestPermissions", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "setInputGain", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "setInputGain", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getOptions", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setOptions", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "resetOptions", returnType: CAPPluginReturnPromise),
     ]
 
     private let implementation = AudioRecorder()
@@ -112,5 +115,21 @@ public class AudioRecorderPlugin: CAPPlugin, CAPBridgedPlugin {
         var updated = result
         updated["uri"] = portable.absoluteString
         return updated
+    }
+
+    @objc func getOptions(_ call: CAPPluginCall) {
+        let options = implementation.getOptions()
+        call.resolve(["options": options])
+    }
+
+    @objc func setOptions(_ call: CAPPluginCall) {
+        let options = call.getObject("options") ?? [:]
+        implementation.setOptions(_options: options)
+        call.resolve()
+    }
+
+    @objc func resetOptions(_ call: CAPPluginCall) {
+        implementation.resetOptions()
+        call.resolve()
     }
 }

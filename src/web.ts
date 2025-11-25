@@ -10,9 +10,10 @@ import type {
   RecorderResult,
   RecorderCapabilities,
   PermissionStatus,
+  RecorderErrorEvent,
 } from './definitions';
 
-import { AudioRecorder } from './AudioRecorder';
+import { AudioRecorder } from './AudioRecorder/AudioRecorder';
 
 export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
 
@@ -32,10 +33,16 @@ export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
     this.implementation.addEventListener('durationChanged', (ev: DurationChangedEvent) => {
       this.notifyListeners('durationChanged', ev);
     });   
+
+    this.implementation.addEventListener('error', (ev: RecorderErrorEvent) => {
+      this.notifyListeners('error', ev);
+    });
   }
 
-  async start(options?: RecorderOptions): Promise<void> {
-    return this.implementation.start(options);    
+  async start(value?: { auto?: boolean; options?: RecorderOptions }): Promise<void> {
+    const opts = value?.options ?? (value as RecorderOptions | undefined);
+    const auto = value?.auto ?? false;
+    return this.implementation.start(auto, opts);
   }
 
   async stop(): Promise<RecorderResult> {
@@ -50,8 +57,8 @@ export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
     return this.implementation.resume();
   }
 
-  async setInputGain(options: { value: number } | number): Promise<void> {
-    const value = typeof options === 'number' ? options : options?.value;
+  async setInputGain(options: { gain: number } | number): Promise<void> {
+    const value = typeof options === 'number' ? options : options?.gain;
     if (typeof value === 'number') {
       this.implementation.setInputGain(value);
     }
@@ -72,4 +79,17 @@ export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
   async requestPermissions(): Promise<PermissionStatus> {
     return this.implementation.requestPermissions();
   }
+
+  async getOptions(): Promise<{ options: RecorderOptions }> {
+    return this.implementation.getOptions();
+  };
+  
+  async setOptions(value: { options: RecorderOptions }): Promise<void> {
+    return this.implementation.setOptions(value);
+  };
+
+  async resetOptions(): Promise<void> {
+    return this.implementation.resetOptions();
+  }
+
 }
