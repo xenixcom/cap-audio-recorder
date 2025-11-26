@@ -134,163 +134,15 @@ export class AudioRecorder {
     }
   }
 
+  private emitEvent<K extends keyof RecorderEventMap>(eventName: K, detail: RecorderEventMap[K]) {
+    this.events.dispatchEvent(new CustomEvent(eventName, { detail }));
+  }
+
   // ----- state -----
 
   private setState(state: RecorderState) {
     this.state = state;
     this.emitEvent('stateChanged', { state });
-  }
-
-  // ----- capability & permission -----
-
-  async checkPermissions(): Promise<PermissionStatus> {
-    if (typeof navigator === 'undefined' || !navigator.permissions) {
-      return { state: 'prompt' } as PermissionStatus;
-    }
-    try {
-      const status = await (navigator.permissions as any).query({ name: 'microphone' });
-      const state = status.state as PermissionState;
-      return { state } as PermissionStatus;
-    } catch {
-      return { state: 'prompt' } as PermissionStatus;
-    }
-  }
-
-  async requestPermissions(): Promise<PermissionStatus> {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(t => t.stop());
-      return { state: 'granted' } as PermissionStatus;
-    } catch {
-      return { state: 'denied' } as PermissionStatus;
-    }
-  }
-
-  // ----- start / stop / pause / resume -----
-
-  async isAvailable(): Promise<boolean> {
-    const hasMediaDevices = typeof navigator !== 'undefined' && !!navigator.mediaDevices;
-    const hasGetUserMedia =
-      hasMediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function';
-    const AudioCtx = getAudioContextCtor();
-    const hasAudioWorklet = !!AudioCtx && 'audioWorklet' in AudioCtx.prototype;
-    return hasGetUserMedia && !!AudioCtx && hasAudioWorklet;
-  }
-
-  async start(auto:boolean = false, options?: RecorderOptions): Promise<void> {
-    if (this.state === 'recording') {
-      throw new Error('already recording');
-    }
-    const available = await this.isAvailable();
-    if (!available) {
-      throw new Error('Web Audio recorder not available');
-    }
-
-    this.resetRecordingState();
-    this.auto = auto;
-    this.options = deepMerge(this.options, options || {});
-    this.encodingFormat = this.getEncodingFormat();
-    this.setState('initializing');
-
-    const constraints: MediaStreamConstraints = {
-      audio: {
-        sampleRate: options?.sampleRate,
-        sampleSize: options?.sampleSize,
-        channelCount: options?.channelCount,
-        autoGainControl: options?.autoGainControl,
-        echoCancellation: options?.echoCancellation,
-        noiseSuppression: options?.noiseSuppression,
-      },
-    };
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      this.mediaStream = stream;
-
-      const AudioCtx = getAudioContextCtor();
-      if (!AudioCtx) {
-        throw new Error('AudioContext unavailable');
-      }
-
-      const audioContext = new AudioCtx({ sampleRate: options?.sampleRate });
-      this.audioContext = audioContext;
-
-      await audioContext.resume();
-      await this.ensureWorkletModule(audioContext, this.options?.workletUrl);
-      this.setupEncodeWorker(audioContext.sampleRate, options?.channelCount || 1);
-      if (!this.encodeWorker) {
-        throw new Error('Failed to start encoder worker');
-      }
-
-      this.workletNode = new AudioWorkletNode(audioContext, 'recorder-processor', {
-        numberOfInputs: 1,
-        numberOfOutputs: 0,
-        channelCount: options?.channelCount,
-        channelCountMode: 'explicit',
-        channelInterpretation: 'discrete',
-      });
-      this.workletNode.port.onmessage = ev => this.handleWorkletData(ev.data);
-      this.workletNode.port.postMessage({ event: 'gain', value: this.options.gain });
-
-      this.sourceNode = audioContext.createMediaStreamSource(stream);
-
-      this.sourceNode.connect(this.workletNode);
-
-      this.startTimestamp = Date.now();
-      this.startDurationTimer(options?.maxDuration);
-      this.setState('recording');
-    } catch (err) {
-      this.stopStreamTracks();
-      this.teardownAudioGraph();
-      this.resetRecordingState();
-      this.setState('error');
-      throw err;
-    }
-  }
-
-  async stop(): Promise<RecorderResult> {
-    if (this.state !== 'recording' && this.state !== 'paused') {
-      throw new Error('not recording');
-    }
-    if (!this.audioContext) {
-      throw new Error('audio context missing');
-    }
-
-    this.setState('stopping');
-    this.clearDurationTimer();
-
-    try {
-      await this.audioContext.suspend();
-    } catch {
-      // ignore
-    }
-
-    try {
-      const channelCount = this.options?.channelCount || 1;
-      const duration = Date.now() - this.startTimestamp;
-      const result = await this.finishEncoding(duration);
-      this.emitEvent('audioUrlReady', result);
-      return result;
-    } finally {
-      this.teardownAudioGraph();
-      this.stopStreamTracks();
-      this.resetRecordingState(true);
-      this.setState('inactive');
-    }
-  }
-
-  async pause(): Promise<void> {
-    if ((this.state !== 'recording' && this.state !== 'paused') || !this.audioContext) return;
-    if (this.state === 'paused') return;
-    await this.audioContext.suspend();
-    this.setState('paused');
-  }
-
-  async resume(): Promise<void> {
-    if (this.state !== 'paused' || !this.audioContext) return;
-    await this.audioContext.resume();
-    this.startDurationTimer(this.options?.maxDuration);
-    this.setState('recording');
   }
 
   // ----- timer & cleanup -----
@@ -478,10 +330,6 @@ export class AudioRecorder {
     }
   }
 
-  private emitEvent<K extends keyof RecorderEventMap>(eventName: K, detail: RecorderEventMap[K]) {
-    this.events.dispatchEvent(new CustomEvent(eventName, { detail }));
-  }
-
   private blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -499,20 +347,178 @@ export class AudioRecorder {
     });
   }
 
-  async getCurrentState(): Promise<{ state: RecorderState }> {
-    return { state: this.state };
+  // ----- capability & permission -----
+
+  async checkPermissions(): Promise<PermissionStatus> {
+    if (typeof navigator === 'undefined' || !navigator.permissions) {
+      return { state: 'prompt' } as PermissionStatus;
+    }
+    try {
+      const status = await (navigator.permissions as any).query({ name: 'microphone' });
+      const state = status.state as PermissionState;
+      return { state } as PermissionStatus;
+    } catch {
+      return { state: 'prompt' } as PermissionStatus;
+    }
   }
+
+  async requestPermissions(): Promise<PermissionStatus> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+      return { state: 'granted' } as PermissionStatus;
+    } catch {
+      return { state: 'denied' } as PermissionStatus;
+    }
+  }
+
+  // ----- start / stop / pause / resume -----
+
+  async isAvailable(): Promise<boolean> {
+    const hasMediaDevices = typeof navigator !== 'undefined' && !!navigator.mediaDevices;
+    const hasGetUserMedia =
+      hasMediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function';
+    const AudioCtx = getAudioContextCtor();
+    const hasAudioWorklet = !!AudioCtx && 'audioWorklet' in AudioCtx.prototype;
+    return hasGetUserMedia && !!AudioCtx && hasAudioWorklet;
+  }
+
+  async start(auto: boolean = false, options?: RecorderOptions): Promise<void> {
+    if (this.state === 'recording') {
+      throw new Error('already recording');
+    }
+    const available = await this.isAvailable();
+    if (!available) {
+      throw new Error('Web Audio recorder not available');
+    }
+
+    this.resetRecordingState();
+    this.auto = auto;
+    this.options = deepMerge(this.options, options || {});
+    this.encodingFormat = this.getEncodingFormat();
+    this.setState('initializing');
+
+    const constraints: MediaStreamConstraints = {
+      audio: {
+        sampleRate: options?.sampleRate,
+        sampleSize: options?.sampleSize,
+        channelCount: options?.channelCount,
+        autoGainControl: options?.autoGainControl,
+        echoCancellation: options?.echoCancellation,
+        noiseSuppression: options?.noiseSuppression,
+      },
+    };
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.mediaStream = stream;
+
+      const AudioCtx = getAudioContextCtor();
+      if (!AudioCtx) {
+        throw new Error('AudioContext unavailable');
+      }
+
+      const audioContext = new AudioCtx({ sampleRate: options?.sampleRate });
+      this.audioContext = audioContext;
+
+      await audioContext.resume();
+      await this.ensureWorkletModule(audioContext, this.options?.workletUrl);
+      this.setupEncodeWorker(audioContext.sampleRate, options?.channelCount || 1);
+      if (!this.encodeWorker) {
+        throw new Error('Failed to start encoder worker');
+      }
+
+      this.workletNode = new AudioWorkletNode(audioContext, 'recorder-processor', {
+        numberOfInputs: 1,
+        numberOfOutputs: 0,
+        channelCount: options?.channelCount,
+        channelCountMode: 'explicit',
+        channelInterpretation: 'discrete',
+      });
+      this.workletNode.port.onmessage = ev => this.handleWorkletData(ev.data);
+      this.workletNode.port.postMessage({ event: 'gain', value: this.options.gain });
+
+      this.sourceNode = audioContext.createMediaStreamSource(stream);
+
+      this.sourceNode.connect(this.workletNode);
+
+      this.startTimestamp = Date.now();
+      this.startDurationTimer(options?.maxDuration);
+      this.setState('recording');
+    } catch (err) {
+      this.stopStreamTracks();
+      this.teardownAudioGraph();
+      this.resetRecordingState();
+      this.setState('error');
+      throw err;
+    }
+  }
+
+  async pause(): Promise<void> {
+    if ((this.state !== 'recording' && this.state !== 'paused') || !this.audioContext) return;
+    if (this.state === 'paused') return;
+    await this.audioContext.suspend();
+    this.setState('paused');
+  }
+
+  async resume(): Promise<void> {
+    if (this.state !== 'paused' || !this.audioContext) return;
+    await this.audioContext.resume();
+    this.startDurationTimer(this.options?.maxDuration);
+    this.setState('recording');
+  }
+
+  async stop(): Promise<RecorderResult> {
+    if (this.state !== 'recording' && this.state !== 'paused') {
+      throw new Error('not recording');
+    }
+    if (!this.audioContext) {
+      throw new Error('audio context missing');
+    }
+
+    this.setState('stopping');
+    this.clearDurationTimer();
+
+    try {
+      await this.audioContext.suspend();
+    } catch {
+      // ignore
+    }
+
+    try {
+      const channelCount = this.options?.channelCount || 1;
+      const duration = Date.now() - this.startTimestamp;
+      const result = await this.finishEncoding(duration);
+      this.emitEvent('audioUrlReady', result);
+      return result;
+    } finally {
+      this.teardownAudioGraph();
+      this.stopStreamTracks();
+      this.resetRecordingState(true);
+      this.setState('inactive');
+    }
+  }
+
 
   async getCapabilities(): Promise<RecorderCapabilities> {
     const supported = await this.isAvailable();
-    const supportedConstraints =
+    const constraints =
       typeof navigator !== 'undefined' && navigator.mediaDevices?.getSupportedConstraints
         ? navigator.mediaDevices.getSupportedConstraints()
         : {};
     const sampleRates = [44100, 48000];
     const sampleSizes = [16, 32];
-    const channelCounts = supportedConstraints.channelCount ? [1, 2] : [1];
-    return { supported, sampleRates, sampleSizes, channelCounts };
+    const channelCounts = constraints.channelCount ? [1, 2] : [1];
+    return {
+      supported,
+      sampleRates,
+      sampleSizes,
+      channelCounts
+    };
+  }
+
+  async getCurrentState(): Promise<{ state: RecorderState }> {
+    return { state: this.state };
   }
 
   async setInputGain(value: number) {

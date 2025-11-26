@@ -15,9 +15,9 @@ export interface AudioRecorderPlugin {
   requestPermissions(): Promise<PermissionStatus>;
   
   start(value: { auto?: boolean; options?: RecorderOptions }): Promise<void>;
-  stop(): Promise<RecorderResult>;
   pause(): Promise<void>;
   resume(): Promise<void>;
+  stop(): Promise<RecorderResult>;
 
   getCapabilities(): Promise<RecorderCapabilities>;
   getCurrentState(): Promise<{ state: RecorderState }>;

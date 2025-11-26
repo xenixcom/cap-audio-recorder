@@ -181,6 +181,7 @@ const startRecording = async () => {
   }
   try {
     await AudioRecorder.start({ auto: false, options: {sampleRate: 48000, sampleSize: 16 } });
+    // await AudioRecorder.start({ auto: false, options: {} });
   } catch (err) {
     message.value = `Start failed: ${String(err)}`;
   }
@@ -212,38 +213,6 @@ const resumeRecording = async () => {
     message.value = `Resume failed: ${String(err)}`;
   }
 };
-
-onMounted(async () => {
-  // sync current permission and state
-  try {
-    const [perm, currentState] = await Promise.all([
-      AudioRecorder.checkPermissions(),
-      AudioRecorder.getCurrentState(),
-    ]);
-    console.log('[AudioRecorder] getCurrentState', currentState);
-    const capabilities = await AudioRecorder.getCapabilities();
-    console.log('[AudioRecorder] getCapabilities', capabilities);
-    permissionState.value = perm.state;
-    recorderState.value = currentState.state;
-  } catch (err) {
-    message.value = `Init error: ${String(err)}`;
-  }
-
-  stateHandle = await AudioRecorder.addListener('stateChanged', event => {
-    recorderState.value = event.state;
-    if (event.state === 'inactive') {
-      durationMs.value = 0;
-    }
-  });
-
-  durationHandle = await AudioRecorder.addListener('durationChanged', event => {
-    durationMs.value = event.duration;
-  });
-
-  audioUrlHandle = await AudioRecorder.addListener('audioUrlReady', event => {
-    audioUrl.value = event.uri || null;
-  });
-});
 
 const getOptions = async () => {
   try {
@@ -290,6 +259,39 @@ const setOptions = async (idx: number) => {
     message.value = `set options failed: ${String(err)}`;
   }
 };
+
+onMounted(async () => {
+  // sync current permission and state
+  try {
+    const [perm, currentState] = await Promise.all([
+      AudioRecorder.checkPermissions(),
+      AudioRecorder.getCurrentState(),
+    ]);
+    console.log('[AudioRecorder] getCurrentState', currentState);
+    const capabilities = await AudioRecorder.getCapabilities();
+    console.log('[AudioRecorder] getCapabilities', capabilities);
+    permissionState.value = perm.state;
+    recorderState.value = currentState.state;
+  } catch (err) {
+    message.value = `Init error: ${String(err)}`;
+  }
+
+  stateHandle = await AudioRecorder.addListener('stateChanged', event => {
+    recorderState.value = event.state;
+    if (event.state === 'inactive') {
+      durationMs.value = 0;
+    }
+  });
+
+  durationHandle = await AudioRecorder.addListener('durationChanged', event => {
+    durationMs.value = event.duration;
+  });
+
+  audioUrlHandle = await AudioRecorder.addListener('audioUrlReady', event => {
+    audioUrl.value = event.uri || null;
+    console.log('audioUrlReady url=', event.uri)
+  });
+});
 
 onUnmounted(async () => {
   await Promise.all([

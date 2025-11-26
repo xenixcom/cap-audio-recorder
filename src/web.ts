@@ -39,14 +39,18 @@ export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
     });
   }
 
+  async checkPermissions(): Promise<PermissionStatus> {
+    return this.implementation.checkPermissions();
+  }
+
+  async requestPermissions(): Promise<PermissionStatus> {
+    return this.implementation.requestPermissions();
+  }
+
   async start(value?: { auto?: boolean; options?: RecorderOptions }): Promise<void> {
     const opts = value?.options ?? (value as RecorderOptions | undefined);
     const auto = value?.auto ?? false;
     return this.implementation.start(auto, opts);
-  }
-
-  async stop(): Promise<RecorderResult> {
-    return this.implementation.stop();
   }
 
   async pause(): Promise<void> {
@@ -57,27 +61,23 @@ export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
     return this.implementation.resume();
   }
 
-  async setInputGain(options: { gain: number } | number): Promise<void> {
-    const value = typeof options === 'number' ? options : options?.gain;
-    if (typeof value === 'number') {
-      this.implementation.setInputGain(value);
-    }
-  }
-
-  async getCurrentState(): Promise<{ state: RecorderState }> {
-    return this.implementation.getCurrentState();
+  async stop(): Promise<RecorderResult> {
+    return this.implementation.stop();
   }
 
   async getCapabilities(): Promise<RecorderCapabilities> {
     return this.implementation.getCapabilities();
   }
 
-  async checkPermissions(): Promise<PermissionStatus> {
-    return this.implementation.checkPermissions();
+  async getCurrentState(): Promise<{ state: RecorderState }> {
+    return this.implementation.getCurrentState();
   }
 
-  async requestPermissions(): Promise<PermissionStatus> {
-    return this.implementation.requestPermissions();
+  async setInputGain(options: { gain: number } | number): Promise<void> {
+    const value = typeof options === 'number' ? options : options?.gain;
+    if (typeof value === 'number') {
+      this.implementation.setInputGain(value);
+    }
   }
 
   async getOptions(): Promise<{ options: RecorderOptions }> {
