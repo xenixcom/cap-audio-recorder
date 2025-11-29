@@ -129,8 +129,8 @@ class AudioRecorder: NSObject {
                 AVFormatIDKey: kAudioFormatLinearPCM,
                 AVSampleRateKey: sampleRate,
                 AVNumberOfChannelsKey: channels,
-                AVLinearPCMBitDepthKey: 16,   // bitDepth,
-                AVLinearPCMIsFloatKey: false, // bitDepth == 32,
+                AVLinearPCMBitDepthKey: 16,  // bitDepth,
+                AVLinearPCMIsFloatKey: false,  // bitDepth == 32,
                 AVLinearPCMIsBigEndianKey: false,
                 AVLinearPCMIsNonInterleaved: !(tapFormat?.isInterleaved ?? false),
             ])
@@ -292,40 +292,6 @@ class AudioRecorder: NSObject {
         }
     }
 
-    func pause(completion: @escaping (Error?) -> Void) {
-        guard stateValue == .recording else {
-            completion(nil)
-            return
-        }
-        DispatchQueue.main.async {
-            self.pauseDate = Date()
-            self.engine?.pause()
-            self.stateValue = .paused
-            completion(nil)
-        }
-    }
-
-    func resume(completion: @escaping (Error?) -> Void) {
-        guard stateValue == .paused else {
-            completion(nil)
-            return
-        }
-        DispatchQueue.main.async {
-            if let pauseDate = self.pauseDate {
-                self.accumulatedPause += Date().timeIntervalSince(pauseDate)
-                self.pauseDate = nil
-            }
-            do {
-                try self.engine?.start()
-                self.stateValue = .recording
-                completion(nil)
-            } catch {
-                self.stateValue = .error
-                completion(error)
-            }
-        }
-    }
-
     func stop(completion: @escaping ([String: Any]?, Error?) -> Void) {
         guard stateValue == .recording || stateValue == .paused else {
             completion(
@@ -379,6 +345,40 @@ class AudioRecorder: NSObject {
         }
     }
 
+    func pause(completion: @escaping (Error?) -> Void) {
+        guard stateValue == .recording else {
+            completion(nil)
+            return
+        }
+        DispatchQueue.main.async {
+            self.pauseDate = Date()
+            self.engine?.pause()
+            self.stateValue = .paused
+            completion(nil)
+        }
+    }
+
+    func resume(completion: @escaping (Error?) -> Void) {
+        guard stateValue == .paused else {
+            completion(nil)
+            return
+        }
+        DispatchQueue.main.async {
+            if let pauseDate = self.pauseDate {
+                self.accumulatedPause += Date().timeIntervalSince(pauseDate)
+                self.pauseDate = nil
+            }
+            do {
+                try self.engine?.start()
+                self.stateValue = .recording
+                completion(nil)
+            } catch {
+                self.stateValue = .error
+                completion(error)
+            }
+        }
+    }
+
     func getCapabilities() -> [String: Any] {
         let session = AVAudioSession.sharedInstance()
 
@@ -409,19 +409,19 @@ class AudioRecorder: NSObject {
         ]
     }
 
-    func setInputGain(value: Float) {
-        gainQueue.sync { self.currentOptions.gain = value }
-    }
-
-    public func getOptions() -> [String: Any] {
+    func getOptions() -> [String: Any] {
         return currentOptions.toDictionary()
     }
 
-    public func setOptions(_options: [String: Any]) {
+    func setOptions(_options: [String: Any]) {
         currentOptions = currentOptions.merged(with: _options)
     }
 
-    public func resetOptions() {
+    func resetOptions() {
         currentOptions = RecorderOptions.defaults
+    }
+
+    func setInputGain(value: Float) {
+        gainQueue.sync { self.currentOptions.gain = value }
     }
 }

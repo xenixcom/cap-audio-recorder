@@ -73,6 +73,17 @@ public class AudioRecorderPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
+    @objc func stop(_ call: CAPPluginCall) {
+        implementation.stop { result, error in
+            if let error = error {
+                call.reject("stop failed: \(error.localizedDescription)")
+            } else {
+                let mapped = result.flatMap { self.withPortableUri(result: $0) } ?? [:]
+                call.resolve(mapped)
+            }
+        }
+    }
+
     @objc func pause(_ call: CAPPluginCall) {
         implementation.pause { error in
             if let error = error {
@@ -93,17 +104,6 @@ public class AudioRecorderPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    @objc func stop(_ call: CAPPluginCall) {
-        implementation.stop { result, error in
-            if let error = error {
-                call.reject("stop failed: \(error.localizedDescription)")
-            } else {
-                let mapped = result.flatMap { self.withPortableUri(result: $0) } ?? [:]
-                call.resolve(mapped)
-            }
-        }
-    }
-
     @objc func getCapabilities(_ call: CAPPluginCall) {
         call.resolve(implementation.getCapabilities())
     }
@@ -112,15 +112,10 @@ public class AudioRecorderPlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve(["state": implementation.state.rawValue])
     }
 
-    @objc func setInputGain(_ call: CAPPluginCall) {
-        let value = call.getFloat("gain") ?? 1
-        implementation.setInputGain(value: value)
-        call.resolve()
-    }
-
     @objc func getOptions(_ call: CAPPluginCall) {
-        let options = implementation.getOptions()
-        call.resolve(["options": options])
+        // let options = implementation.getOptions()
+        // call.resolve(["options": options])
+        call.resolve(implementation.getOptions())
     }
 
     @objc func setOptions(_ call: CAPPluginCall) {
@@ -131,6 +126,12 @@ public class AudioRecorderPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func resetOptions(_ call: CAPPluginCall) {
         implementation.resetOptions()
+        call.resolve()
+    }
+
+    @objc func setInputGain(_ call: CAPPluginCall) {
+        let value = call.getFloat("gain") ?? 1
+        implementation.setInputGain(value: value)
         call.resolve()
     }
 }

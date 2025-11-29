@@ -454,20 +454,6 @@ export class AudioRecorder {
     }
   }
 
-  async pause(): Promise<void> {
-    if ((this.state !== 'recording' && this.state !== 'paused') || !this.audioContext) return;
-    if (this.state === 'paused') return;
-    await this.audioContext.suspend();
-    this.setState('paused');
-  }
-
-  async resume(): Promise<void> {
-    if (this.state !== 'paused' || !this.audioContext) return;
-    await this.audioContext.resume();
-    this.startDurationTimer(this.options?.maxDuration);
-    this.setState('recording');
-  }
-
   async stop(): Promise<RecorderResult> {
     if (this.state !== 'recording' && this.state !== 'paused') {
       throw new Error('not recording');
@@ -499,6 +485,19 @@ export class AudioRecorder {
     }
   }
 
+  async pause(): Promise<void> {
+    if ((this.state !== 'recording' && this.state !== 'paused') || !this.audioContext) return;
+    if (this.state === 'paused') return;
+    await this.audioContext.suspend();
+    this.setState('paused');
+  }
+
+  async resume(): Promise<void> {
+    if (this.state !== 'paused' || !this.audioContext) return;
+    await this.audioContext.resume();
+    this.startDurationTimer(this.options?.maxDuration);
+    this.setState('recording');
+  }
 
   async getCapabilities(): Promise<RecorderCapabilities> {
     const supported = await this.isAvailable();
@@ -529,8 +528,8 @@ export class AudioRecorder {
     }
   }
 
-  async getOptions(): Promise<{ options: RecorderOptions }> {
-    return { options: cloneOptions(this.options) };
+  async getOptions(): Promise<RecorderOptions> {
+    return cloneOptions(this.options);
   }
 
   async setOptions(value: { options: RecorderOptions }): Promise<void> {

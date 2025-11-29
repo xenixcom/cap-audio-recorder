@@ -55,6 +55,8 @@
             </div>
 
             <div class="controls">
+              <ion-button color="primary" @click="getCurrentState">getState</ion-button>
+              <ion-button color="primary" @click="getCapabilities">Capabilities</ion-button>
               <ion-button color="primary" @click="getOptions">Get Options</ion-button>
               <ion-button color="primary" @click="setOptions(0)">Set Options #0</ion-button>
               <ion-button color="primary" @click="setOptions(1)">Set Options #1</ion-button>
@@ -137,24 +139,6 @@ const askPermission = async (): Promise<PermissionState | null> => {
   }
 };
 
-const logCurrentState = async () => {
-  try {
-    const state = await AudioRecorder.getCurrentState();
-    console.log('[AudioRecorder] getCurrentState', state);
-  } catch (err) {
-    message.value = `Get state failed: ${String(err)}`;
-  }
-};
-
-const logCapabilities = async () => {
-  try {
-    const caps = await AudioRecorder.getCapabilities();
-    console.log('[AudioRecorder] getCapabilities', caps);
-  } catch (err) {
-    message.value = `Get capabilities failed: ${String(err)}`;
-  }
-};
-
 const onGainInput = async (ev: CustomEvent) => {
   const value = Number((ev.detail as any)?.value ?? 1);
   gainValue.value = Number.isFinite(value) ? value : 1;
@@ -180,8 +164,11 @@ const startRecording = async () => {
     return;
   }
   try {
-    await AudioRecorder.start({ auto: false, options: {sampleRate: 48000, sampleSize: 16 } });
-    // await AudioRecorder.start({ auto: false, options: {} });
+    // await AudioRecorder.start({ auto: true, options: {sampleRate: 48000, sampleSize: 16 } });
+    // await AudioRecorder.start({ auto: true, options: {} });
+    // await AudioRecorder.start({ auto: false});
+    // await AudioRecorder.start({ options: {sampleRate: 96000, sampleSize: 32 } });
+    await AudioRecorder.start()
   } catch (err) {
     message.value = `Start failed: ${String(err)}`;
   }
@@ -214,10 +201,30 @@ const resumeRecording = async () => {
   }
 };
 
+const getCurrentState = async () => {
+  try {
+    const res = await AudioRecorder.getCurrentState();
+    console.log('[AudioRecorder] getCurrentState', res.state);
+  } catch (err) {
+    message.value = `Get state failed: ${String(err)}`;
+  }
+};
+
+const getCapabilities = async () => {
+  try {
+    const capabilities = await AudioRecorder.getCapabilities();
+    console.log(JSON.stringify(capabilities, null, 2));
+  } catch (err) {
+    message.value = `get options failed: ${String(err)}`;
+  }
+};
+
 const getOptions = async () => {
   try {
-    const res = await AudioRecorder.getOptions();
-    console.log(JSON.stringify(res.options, null, 2));
+    // const res = await AudioRecorder.getOptions();
+    // console.log(JSON.stringify(res.options, null, 2));
+    const options = await AudioRecorder.getOptions();
+    console.log(JSON.stringify(options, null, 2));
   } catch (err) {
     message.value = `get options failed: ${String(err)}`;
   }

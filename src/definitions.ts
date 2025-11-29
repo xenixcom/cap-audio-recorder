@@ -14,17 +14,18 @@ export interface AudioRecorderPlugin {
   checkPermissions(): Promise<PermissionStatus>;
   requestPermissions(): Promise<PermissionStatus>;
   
-  start(value: { auto?: boolean; options?: RecorderOptions }): Promise<void>;
+  start(value?: { auto?: boolean; options?: RecorderOptions }): Promise<void>;
+  stop(): Promise<RecorderResult>;
   pause(): Promise<void>;
   resume(): Promise<void>;
-  stop(): Promise<RecorderResult>;
 
   getCapabilities(): Promise<RecorderCapabilities>;
   getCurrentState(): Promise<{ state: RecorderState }>;
-  setInputGain(value: { gain: number }): Promise<void>;
-  getOptions(): Promise<{ options: RecorderOptions }>;
+  getOptions(): Promise<RecorderOptions>;
   setOptions(value: { options: RecorderOptions }): Promise<void>;
   resetOptions(): Promise<void>;
+  
+  setInputGain(value: { gain: number }): Promise<void>;
 
   addListener(
     eventName: 'stateChanged', 

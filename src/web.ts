@@ -53,16 +53,16 @@ export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
     return this.implementation.start(auto, opts);
   }
 
+  async stop(): Promise<RecorderResult> {
+    return this.implementation.stop();
+  }
+
   async pause(): Promise<void> {
     return this.implementation.pause();
   }
 
   async resume(): Promise<void> {
     return this.implementation.resume();
-  }
-
-  async stop(): Promise<RecorderResult> {
-    return this.implementation.stop();
   }
 
   async getCapabilities(): Promise<RecorderCapabilities> {
@@ -73,14 +73,7 @@ export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
     return this.implementation.getCurrentState();
   }
 
-  async setInputGain(options: { gain: number } | number): Promise<void> {
-    const value = typeof options === 'number' ? options : options?.gain;
-    if (typeof value === 'number') {
-      this.implementation.setInputGain(value);
-    }
-  }
-
-  async getOptions(): Promise<{ options: RecorderOptions }> {
+  async getOptions(): Promise<RecorderOptions> {
     return this.implementation.getOptions();
   };
   
@@ -90,6 +83,13 @@ export class AudioRecorderWeb extends WebPlugin implements AudioRecorderPlugin {
 
   async resetOptions(): Promise<void> {
     return this.implementation.resetOptions();
+  }
+
+  async setInputGain(options: { gain: number } | number): Promise<void> {
+    const value = typeof options === 'number' ? options : options?.gain;
+    if (typeof value === 'number') {
+      this.implementation.setInputGain(value);
+    }
   }
 
 }
